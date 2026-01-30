@@ -2,77 +2,61 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
-    tags: [ '*' ]
+    branches: [ "*" ]
+    tags: [ "*" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "*" ]
 
 jobs:
   build:
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: ["3.8", "3.9", "3.10"]
-        include:
-          - python-version: "3.13-dev"
-            experimental: true
-    continue-on-error: ${{ matrix.experimental || false }}
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          # Removed cache: 'pip' because no requirements.txt or pyproject.toml exists yet
+          python-version: '3.8'
 
-      - name: Before Install
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pylint pytest pytest-cov
-          pylint --generate-rcfile > ~/.pylintrc
-          sed -i "s/min-similarity-lines=.*/min-similarity-lines=50/g" ~/.pylintrc
-          git describe --tags --long --dirty || sed -i "s/setup_requires = .*/version = '0.0.0',/g" setup.py
+          python -m pip install pylint pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip list
 
-      - name: Install
-        run: pip install -e .
-
-      - name: Run Lint
+      - name: Run Lint and Tests
         run: |
-          pylint content_hash/*
-          pylint example.py
+          chmod +x lint.sh test.sh
+          ./lint.sh && ./test.sh
 
-      - name: Run Test
-        run: pytest --cov=content_hash
-
-      - name: After Script (Scrutinizer)
-        if: matrix.python-version == '3.7'
-        run: |
-          pip install scrutinizer-ocular
-          ocular
-        continue-on-error: true
-
-  deploy:
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Install build tools
-        run: pip install setuptools wheel twine
-      - name: Build and Publish
+      - name: SonarCloud Scan
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'IBM/qpylib'
+        uses: SonarSource/sonarcloud-github-action@master
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USER }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Build
+        shell: bash
         run: |
-          python setup.py sdist bdist_wheel
-          twine upload --skip-existing dist/*
+          chmod +x build.sh
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            ./build.sh "${TAG_NAME}"
+          else
+            ./build.sh "0.0.dev${GITHUB_RUN_NUMBER}"
+          fi
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/qpylib-${{ github.ref_name }}.tar.gz
+            dist/qpylib-${{ github.ref_name }}-py3-none-any.whl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

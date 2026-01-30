@@ -1,63 +1,39 @@
-from setuptools import setup
-from pathlib import Path
-import os
+"""
+Copyright 2019 IBM Corporation All Rights Reserved.
 
-# 安全读取 README.md，不区分大小写
-def readme():
-    root = Path(__file__).parent
-    readme_file = None
-    for name in os.listdir(root):
-        if name.lower() == "readme.md":
-            readme_file = root / name
-            break
-    if readme_file and readme_file.exists():
-        return readme_file.read_text(encoding="utf-8")
-    return ""  # 文件不存在时返回空字符串
+SPDX-License-Identifier: Apache-2.0
+"""
+import setuptools
 
-setup(
-    name='content-hash',
-    description='Python implementation of EIP 1577 content hash',
-    long_description=readme(),
-    long_description_content_type='text/markdown',
-    license='MIT',
+def main():
+    with open("qpylib/version.py", "r") as version_file:
+        line = version_file.read().rstrip()
+        _, _, version = line.replace("'", '').split()
 
-    version='1.0.0',
+    with open("README.md", "r") as readme:
+        long_desc = readme.read()
 
-    packages=['content_hash'],
+    setuptools.setup(
+        name="qpylib",
+        author="IBM",
+        author_email="<>",
+        version=version,
+        description="QRadar app utility library",
+        long_description=long_desc,
+        long_description_content_type="text/markdown",
+        license="SPDX-License-Identifier: Apache-2.0",
+        url="https://github.com/ibm/qpylib",
+        packages=setuptools.find_packages(),
+        install_requires=[
+            "flask>=1.1,<2",
+            "requests>=2.22,<3",
+            "pycryptodome>=3.9,<4",
+            "cryptography>=2.8,<4"
+        ],
+        classifiers=[
+            "Programming Language :: Python :: 3",
+            "Operating System :: OS Independent",
+        ],
+    )
 
-    entry_points={
-        'console_scripts': ['content-hash=content_hash.__main__:main'],
-    },
-
-    install_requires=[
-        'py-cid>=0.3.0,<0.4.0',
-        'py-multicodec>=0.2.1,<0.3.0',
-        'py-multihash>=0.2.3,<0.3.0',
-    ],
-
-    extras_require={
-        'lint': ['pylint'],
-        'test': ['pytest', 'pytest-cov'],
-    },
-
-    python_requires='>= 3.5',
-
-    author='Filip Š',
-    author_email='projects@filips.si',
-    url='https://github.com/filips123/ContentHashPy/',
-    keywords='ethereum, ethereum-name-service, ens, eip1577, web3, decentralized',
-
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3',
-        'Topic :: Internet :: Name Service (DNS)',
-        'Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator',
-        'Topic :: Security :: Cryptography',
-        'Topic :: Software Development :: Libraries',
-        'Topic :: Utilities',
-    ],
-
-    include_package_data=True,
-)
+main()
