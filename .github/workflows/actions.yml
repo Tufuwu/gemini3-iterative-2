@@ -1,31 +1,48 @@
-name: Python CI
+name: Python Package
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, main ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+        include:
+          - python-version: "3.11-dev"
+            experimental: true
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python 3.9
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version: ${{ matrix.python-version }}
 
-    - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
     - name: Install dependencies
-      run: make setup
+      run: |
+        python -m pip install --upgrade pip
+        pip install -q -U pytest pytest-html pytest-metadata
+        python setup.py -q install
 
-    - name: Run tests
-      run: make test
+    - name: Test with pytest
+      continue-on-error: ${{ matrix.experimental || false }}
+      run: |
+        python --version
+        mkdir -p build/testing
+        pytest tests
 
