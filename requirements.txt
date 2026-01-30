@@ -1,13 +1,5 @@
-pydantic
-print-color
-tqdm
-langchain
-langchain-ollama
-langchain-huggingface
-numpy
-sentence-transformers
-ollama
+pre-commit
 pytest
 pytest-cov
-codecov
-flake8
+tox
+tox-gh-actions
