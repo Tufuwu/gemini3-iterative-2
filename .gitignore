@@ -1,11 +1,16 @@
-*.pyc
+TAGS
+tags
+lib/testtools
+MANIFEST
+dist
+.testrepository
 __pycache__
-env
-/.idea/
-
-# ignore mappings and settings files
-/mappings.py
-/settings.py
-
-# ignore downloads
-/downloads
+fixtures.egg-info
+*.pyc
+.*.swp
+*~
+AUTHORS
+ChangeLog
+.eggs
+build
+.tox
