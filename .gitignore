@@ -1,13 +1,11 @@
-# example checkpoints
-irrad_spectroscopy/examples/.ipynb_checkpoints/
-# example output folder
-irrad_spectroscopy/examples/output/
-# pyc
 *.pyc
-# pycharm
-.idea/
-# eclipse
-.project
-.pydevproject
-# egg-info folder
-irrad_spectroscopy.egg-info/
+__pycache__
+env
+/.idea/
+
+# ignore mappings and settings files
+/mappings.py
+/settings.py
+
+# ignore downloads
+/downloads
