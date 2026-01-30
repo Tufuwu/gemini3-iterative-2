@@ -1,5 +1,8 @@
-.nyc_output/
-coverage
-node_modules
+node_modules/
+tmp/
+coverage/
 npm-debug.log
-package-lock.json
+.DS_Store
+.obsidian/
+/yarn.lock
+test.js

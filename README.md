@@ -1,151 +1,194 @@
-# serve-index
+# Mark Notation
 
-[![NPM Version][npm-image]][npm-url]
-[![NPM Downloads][downloads-image]][downloads-url]
-[![Linux Build Status][ci-image]][ci-url]
-[![Windows Build][appveyor-image]][appveyor-url]
-[![Coverage Status][coveralls-image]][coveralls-url]
+[![npm version](https://badge.fury.io/js/mark-js.svg)](https://badge.fury.io/js/mark-js)
+[![CI](https://github.com/henry-luo/mark/actions/workflows/ci.yml/badge.svg)](https://github.com/henry-luo/mark/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/henry-luo/mark/branch/master/graph/badge.svg)](https://codecov.io/gh/henry-luo/mark)
 
-  Serves pages that contain directory listings for a given path.
+**Mark Notation** is a modern, unified data format that combines the best aspects of JSON, XML, HTML, and other popular formats while eliminating their limitations. It provides a clean syntax with full type support, making it ideal for configuration files, data exchange, and document markup.
 
-## Install
+## Table of Contents
 
-This is a [Node.js](https://nodejs.org/en/) module available through the
-[npm registry](https://www.npmjs.com/). Installation is done using the
-[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
+- [Mark Syntax](#mark-syntax)
+- [Mark Data Model](#mark-data-model)
+- [Comparisons](#mark-vs-json)
+  - [Mark vs. JSON](#mark-vs-json)
+  - [Mark vs. HTML/JSX](#mark-vs-htmljsx)
+  - [Mark vs. XML](#mark-vs-xml)
+  - [Mark vs. S-expressions](#mark-vs-s-expressions)
+- [mark.js Library](#markjs)
+- [Installation & Usage](#usage)
+- [Documentation](#documentation)
+- [Credits](#credits)
 
-```sh
-$ npm install serve-index
+- It has **clean syntax** with **fully-typed** data model *(like JSON, but even better)*
+- It is **generic** and **extensible** *(like XML, but even better)*
+- It has built-in **mixed content** support *(like HTML5 or even better)*
+- It supports **high-order** composition *(like S-expressions or even better)*
+
+|                        | Mark                           | JSON     | HTML | JSX                                | XML          | S-expr                             | YAML                                  |
+| ------------ | ---- | ---- | ---- | ---------------------------------- | ------------ | ------ | ------------------------------------- |
+| Clean syntax           | yes                            | yes      | no   | no                                 | verbose      | yes                                | yes <sub>(only for basic usage)</sub> |
+| Fully-typed            | yes                            | yes      | no   | partially<br><sub>(in {...})</sub> | need schema  | yes                                | yes                                   |
+| Generic                | yes                            | yes      | no   | no                                 | yes                                    | yes                                | yes                                   |
+| Mixed content support  | yes                            | hard     | yes  | yes                                | yes                                    | hard <sub>(poor map support)</sub> | hard                                  |
+| High-order composition | yes                            | possible | no   | yes                                | verbose                                | yes                                | possible                              |
+| Wide adoption          | not <sub>(at the moment)</sub> | yes      | yes  | yes                                | yes                                    | limited                            | limited                               |
+
+## Mark Syntax
+
+The major syntax extension Mark makes to JSON is the introduction of a Mark element. It is a JSON object extended with a type name and a list of content items, similar to element in HTML and XML.
+
+For example, a HTML registration form:
+
+```html
+<form>
+  <!--comment-->
+  <div class="form-group">
+    <label for="email">Email address:</label>
+    <input type="email" id="email">
+  </div>
+  <div class="form-group">
+    <label for="pwd">Password</label>
+    <input type="password" id="pwd">
+  </div>
+  <button class='btn btn-info'>Submit</button>
+</form>
 ```
 
-## API
+Could be represented in Mark as:
+
+```text
+<form                                 // element with name 'form'
+  <'!--'comment>                      // HTML comment as special element
+  <div class:'form-group'             // nested child element
+    <label for:email                  // 'for' and its value, both unquoted
+      "Email address:"                // text needs to be double quoted
+    >
+    <input type:email, id:email>      // element without child
+  >
+  <div class:'form-group'             // 'form-group' is a quoted symbol
+    <label for:pwd; "Password">       // pwd is an unquoted symbol
+    <input type:password, id:pwd>     // attrs separated by comma, like JSON
+  >
+  <button class:[btn, 'btn-info']     // attribute with complex values
+    "Submit"                          // text quoted with double quote
+  >
+>
+```
+
+You can refer to the [syntax spec](https://mark.js.org/mark-syntax.html) for details.
+
+## Mark Data Model
+
+Mark has a very simple and fully-typed data model. 
+
+Each Mark element has 3 facets of data:
+
+- **Element name**, which is mapped to `object.constructor.name` under JavaScript.
+- **Attributes**, which is a collection of key-value pairs, stored as normal JavaScript *named properties*.
+- **Contents**, which is a list of child objects, stored as *indexed properties* inside the same JavaScript object.
+
+Mark utilizes a novel feature in JavaScript that a plain JS object is actually *array-like*, it can contain both named properties and indexed properties.
+
+So each Mark element is mapped to just **one** plain JavaScript object, which is more compact and efficient compared to other JSON-based DOM models (e.g. [JsonML](http://www.jsonml.org/), [virtual-dom](https://github.com/Matt-Esch/virtual-dom), [MicroXML](https://dvcs.w3.org/hg/microxml/raw-file/tip/spec/microxml.html)), and is more intuitive to use under JS.
+
+Roughly speaking, data models of JSON, XML, HTML are subsets of Mark data model, and Mark data model is a subset of JS data model.
+
+<div align="center">
+<img src='https://mark.js.org/data-model.png' width='300'>
+</div>
+
+You can refer to the [data model spec](https://mark.js.org/mark-model.html) for details.
+
+## Mark vs. JSON
+
+Mark is a superset of JSON. It extends JSON notation with additional scalar and container types.
+
+Compared to JSON, Mark has the following advantages:
+
+- Additional scalar types supported under Mark, compared to JSON, include: *symbol*, *decimal number*, *datetime*, *binary* (supporting essentially all the major built-in data types under JS).
+- For container types, other than *array* and *map*, Mark supports a new type *element*. Mark *element* has a type-name, which is important in identifying what the data represents; whereas JSON map is actually an anonymous object, missing the type name.
+- Mark element has built-in mixed-content support, which is common in all markup formats, and thus allows Mark to conveniently represent document-oriented data, which is awkward for JSON.
+- Mark incorporates some syntax enhancements to JSON ~(e.g. allowing comments, name without quotes)~, thus making the format more friendly for humans.
+
+Some disadvantages of Mark, compared to JSON would be:
+
+- It is no longer a subset of JavaScript literal syntax, although a Mark object is still a simple POJO in JS data model.
+- It does not yet have wide support, like JSON, at the moment.
+
+## Mark vs. HTML/JSX
+
+Compared to HTML/JSX, Mark has the following advantages:
+
+- Mark is a generic data format, whereas HTML is a specialized format for web content.
+- It does not have whitespace ambiguity, as the text objects are quoted explicitly. Thus Mark can be minified or prettified without worrying about changing the underlying content.
+- Mark attributes can have complex values, like JSON, not just quoted string values as in HTML.
+- It has a very clean syntax, whereas HTML5 parsing can be challenging even with HTML5 spec.
+- It is always properly closed; whereas HTML self-closing tag syntax is non-extensible and error-prone.
+- The DOM produced under Mark model, is just a hierarchy of POJO objects, which can be easily processed using the built-in JS functions or 3rd party libraries, making Mark an ideal candidate for virtual DOM and other application usages.
+
+## Mark vs. XML
+
+Compared to XML, Mark has the following advantages:
+
+- Mark attributes can have complex objects as values; whereas XML attribute values always need to be quoted and cannot have complex objects as values, which is not flexible in syntax and data model.
+- Mark syntax is much cleaner than XML. It does not have whitespace ambiguity. It does not have all the legacy things like DTD. It does not have the verbose closing tag.
+- The data model produced by Mark is fully typed, like JSON; whereas XML is only semi-typed, when there's no schema.
+
+## Mark vs. S-expressions
+
+Lisp and S-expression gave rise to novel ideas like high-order composition, self-hosting program, data as code, code as data, etc.. It's the source of inspiration of Mark and [Lambda Script](https://github.com/henry-luo/lambda).
+
+The advantage of Mark over S-expressions is that it takes a more modern, web-first approach in its design, making it more readily usable in web and Node.js environments.
+
+## mark.js
+
+`mark.js` is the JS library to work with data in Mark format. It consists of 4 modules:
+
+- The core module `mark.js`, which provides `parse()` and `stringify()` functions, like JSON, and a direct Mark object construction function `Mark()`, and some functional APIs to work with the object content.
+- Sub-module `mark.mutate.js`, which provides mutative APIs to change the Mark object data model.
+- Sub-module `mark.convert.js`, which provides conversion between Mark format and other formats like HTML and XML.
+- Sub-module `mark.selector.js`, which provides CSS selector based query interface on the Mark object model, like jQuery.
+
+## Usage
+
+Install from NPM:
+
+```
+npm install mark-js --save
+```
+
+Then in your node script, use it as:
 
 ```js
-var serveIndex = require('serve-index')
+const Mark = require('mark-js');
+var obj = Mark.parse(`<div <span "Hello World!">>`);
+console.log("Greeting from Mark: " + Mark.stringify(obj));
 ```
 
-### serveIndex(path, options)
+To use the library in browser, you can include the `mark.js` under `/dist` directory into your html page, like:
 
-Returns middlware that serves an index of the directory in the given `path`.
-
-The `path` is based off the `req.url` value, so a `req.url` of `'/some/dir`
-with a `path` of `'public'` will look at `'public/some/dir'`. If you are using
-something like `express`, you can change the URL "base" with `app.use` (see
-the express example).
-
-#### Options
-
-Serve index accepts these properties in the options object.
-
-##### filter
-
-Apply this filter function to files. Defaults to `false`. The `filter` function
-is called for each file, with the signature `filter(filename, index, files, dir)`
-where `filename` is the name of the file, `index` is the array index, `files` is
-the array of files and `dir` is the absolute path the file is located (and thus,
-the directory the listing is for).
-
-##### hidden
-
-Display hidden (dot) files. Defaults to `false`.
-
-##### icons
-
-Display icons. Defaults to `false`.
-
-##### stylesheet
-
-Optional path to a CSS stylesheet. Defaults to a built-in stylesheet.
-
-##### template
-
-Optional path to an HTML template or a function that will render a HTML
-string. Defaults to a built-in template.
-
-When given a string, the string is used as a file path to load and then the
-following tokens are replaced in templates:
-
-  * `{directory}` with the name of the directory.
-  * `{files}` with the HTML of an unordered list of file links.
-  * `{linked-path}` with the HTML of a link to the directory.
-  * `{style}` with the specified stylesheet and embedded images.
-
-When given as a function, the function is called as `template(locals, callback)`
-and it needs to invoke `callback(error, htmlString)`. The following are the
-provided locals:
-
-  * `directory` is the directory being displayed (where `/` is the root).
-  * `displayIcons` is a Boolean for if icons should be rendered or not.
-  * `fileList` is a sorted array of files in the directory. The array contains
-    objects with the following properties:
-    - `name` is the relative name for the file.
-    - `stat` is a `fs.Stats` object for the file.
-  * `path` is the full filesystem path to `directory`.
-  * `style` is the default stylesheet or the contents of the `stylesheet` option.
-  * `viewName` is the view name provided by the `view` option.
-
-##### view
-
-Display mode. `tiles` and `details` are available. Defaults to `tiles`.
-
-## Examples
-
-### Serve directory indexes with vanilla node.js http server
-
-```js
-var finalhandler = require('finalhandler')
-var http = require('http')
-var serveIndex = require('serve-index')
-var serveStatic = require('serve-static')
-
-// Serve directory indexes for public/ftp folder (with icons)
-var index = serveIndex('public/ftp', {'icons': true})
-
-// Serve up public/ftp folder files
-var serve = serveStatic('public/ftp')
-
-// Create server
-var server = http.createServer(function onRequest(req, res){
-  var done = finalhandler(req, res)
-  serve(req, res, function onNext(err) {
-    if (err) return done(err)
-    index(req, res, done)
-  })
-})
-
-// Listen
-server.listen(3000)
+```html
+<script src='mark.js'></script>
+<script>
+var obj = Mark(`<div <span "Hello World!">>`);  // using a shorthand
+console.log("Greeting from Mark: " + Mark.stringify(obj));
+</script>
 ```
 
-### Serve directory indexes with express
+Note: /dist/mark.js has bundled all sub-modules and all dependencies with it, and is meant to run in browser. The entire script is about 14K after gzip. It supports latest browsers, including Chrome, Safari, Firefox, Edge. (*Legacy browser IE is not supported.*)
 
-```js
-var express    = require('express')
-var serveIndex = require('serve-index')
+*If you just want the core functional API, without the sub-modules, you can also use mark.core.js, which is only 7K after gzip. You can also refer to the package.json to create your own custom bundle with the sub-modules you need.*
 
-var app = express()
+And Mark Notation support for VS Code:
+- [Mark VSC Extension](https://marketplace.visualstudio.com/items?itemName=henryluo.mark-vsce) 
 
-// Serve URLs like /ftp/thing as public/ftp/thing
-// The express.static serves the file contents
-// The serveIndex is this module serving the directory
-app.use('/ftp', express.static('public/ftp'), serveIndex('public/ftp', {'icons': true}))
+## Documentation
 
-// Listen
-app.listen(3000)
-```
+- [Syntax specification](https://mark.js.org/mark-syntax.html)
+- [Data model and API specification](https://mark.js.org/mark-model.html)
+- [FAQ](https://mark.js.org/faq.html)
+- Discussion about Mark beta release at [Hacker News](https://news.ycombinator.com/item?id=16308581)
+## Credits
 
-## License
-
-[MIT](LICENSE). The [Silk](http://www.famfamfam.com/lab/icons/silk/) icons
-are created by/copyright of [FAMFAMFAM](http://www.famfamfam.com/).
-
-[appveyor-image]: https://img.shields.io/appveyor/ci/dougwilson/serve-index/master.svg?label=windows
-[appveyor-url]: https://ci.appveyor.com/project/dougwilson/serve-index
-[ci-image]: https://badgen.net/github/checks/expressjs/serve-index/master?label=ci
-[ci-url]: https://github.com/expressjs/serve-index/actions/workflows/ci.yml
-[coveralls-image]: https://img.shields.io/coveralls/expressjs/serve-index/master.svg
-[coveralls-url]: https://coveralls.io/r/expressjs/serve-index?branch=master
-[downloads-image]: https://img.shields.io/npm/dm/serve-index.svg
-[downloads-url]: https://npmjs.org/package/serve-index
-[npm-image]: https://img.shields.io/npm/v/serve-index.svg
-[npm-url]: https://npmjs.org/package/serve-index
+Thanks to the following platforms or services that support the open source development of Mark: NPM, GitHub, [Travis CI](https://travis-ci.org/), [Codecov](https://codecov.io/), [JS.org](https://js.org/).
