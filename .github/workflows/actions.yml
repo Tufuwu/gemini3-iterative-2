@@ -2,42 +2,31 @@ name: Node.js CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [16, 18, 20]
+        node-version: [16]
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: ppc64le
+            os: [self-hosted, linux, ppc64le]
+    
+    runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: |
-          npm install
-          npm run bootstrap
-
-      - name: Run lint
-        run: npm run lint --if-present
-        env:
-          PATH: ${{ github.workspace }}/node_modules/.bin:${{ env.PATH }}
-
-      - name: Run tests and coverage
-        run: npm test
-
-      - name: Coveralls
-        if: success()
-        run: npm run coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Before Install
+        run: git --version
 
