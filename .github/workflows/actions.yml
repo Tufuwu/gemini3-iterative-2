@@ -2,32 +2,42 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
         with:
-          node-version: 'lts/*'
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
       - name: Install dependencies
         run: |
-          npm install boolbase nth-check htmlparser2
-          npm install tape tap-spec istanbul
+          npm install
+          npm run bootstrap
 
-      - name: Run coverage
-        run: npm run coverage
+      - name: Run lint
+        run: npm run lint --if-present
+        env:
+          PATH: ${{ github.workspace }}/node_modules/.bin:${{ env.PATH }}
 
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run tests and coverage
+        run: npm test
+
+      - name: Coveralls
+        if: success()
+        run: npm run coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
