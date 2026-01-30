@@ -1,75 +1,38 @@
+# coding=utf-8
 import codecs
-import os
-import re
 
-from setuptools import Command, setup
-
-BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+from setuptools import setup, find_packages
 
 
-def read(fname):
-    file_path = os.path.join(os.path.dirname(__file__), fname)
-    return codecs.open(file_path, encoding="utf-8").read()
-
-
-def get_version():
-    changes_path = os.path.join(BASE_PATH, "CHANGES.rst")
-    regex = r"^#*\s*(?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)$"
-    with codecs.open(changes_path, encoding="utf-8") as changes_file:
-        for line in changes_file:
-            res = re.match(regex, line)
-            if res:
-                return res.group("version")
-    return "0.0.0"
-
-
-version = get_version()
-
-
-class VersionCommand(Command):
-    description = "print current library version"
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        print(version)
+def long_description():
+    try:
+        with codecs.open('README.md', 'r', 'utf-8') as f:
+            return f.read()
+    except:
+        return 'Error loading README.md'
 
 
 setup(
-    name="pytest-deadfixtures",
-    version=version,
-    author="João Luiz Lorencetti",
-    author_email="me@dirtycoder.net",
-    maintainer="João Luiz Lorencetti",
-    maintainer_email="me@dirtycoder.net",
-    license="MIT",
-    url="https://github.com/jllorencetti/pytest-deadfixtures",
-    description="A simple plugin to list unused fixtures in pytest",
-    long_description=read("README.rst"),
-    py_modules=["pytest_deadfixtures"],
-    install_requires=["pytest>=3.0.0"],
+    name='django-earthdistance',
+    version='1.1.3',
+    install_requires=[
+        'django>=1.8'],
+    url='https://github.com/jneight/django-earthdistance',
+    description='Add support for PostgreSQL earthdistance extension to Django',
+    long_description=long_description(),
+    long_description_content_type='text/markdown',
+    packages=find_packages(),
+    include_package_data=True,
+    license='Apache 2.0',
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
-        "Framework :: Pytest",
-        "Intended Audience :: Developers",
-        "Topic :: Software Development :: Testing",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy",
-        "Operating System :: OS Independent",
-        "License :: OSI Approved :: MIT License",
+        'Environment :: Web Environment',
+        'Framework :: Django',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Topic :: Software Development :: Libraries :: Application Frameworks',
     ],
-    cmdclass={"version": VersionCommand},
-    entry_points={"pytest11": ["deadfixtures = pytest_deadfixtures"]},
+    author='Javier Cordero Martinez',
+    author_email='github@j2i.me'
 )
