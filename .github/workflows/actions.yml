@@ -1,48 +1,50 @@
-name: Python Package
+name: CI
 
 on:
   push:
-    branches: [ main, main ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, main ]
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
-      fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
         include:
-          - python-version: "3.11-dev"
-            experimental: true
+          - python-version: "3.8"
+            toxenv: cover
+          - python-version: "3.8"
+            toxenv: black
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -q -U pytest pytest-html pytest-metadata
-        python setup.py -q install
+      - name: Install dependencies
+        run: |
+          npm i -g elm
+          python -m pip install --upgrade pip
+          pip install tox tox-gh-actions coveralls
 
-    - name: Test with pytest
-      continue-on-error: ${{ matrix.experimental || false }}
-      run: |
-        python --version
-        mkdir -p build/testing
-        pytest tests
+      - name: Run tox
+        run: tox
+        env:
+          TOXENV: ${{ matrix.toxenv }}
+
+      - name: Upload Coverage
+        if: success() && matrix.toxenv == 'cover'
+        run: coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_SERVICE_NAME: github
 

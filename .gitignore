@@ -1,31 +1,20 @@
-*.bak
-*.egg-info/
-*.log
+# Python
 *.pyc
-*.pyo
-*.tmp
-
-.DS_Store
-.coverage
-.coverage.*
-.done.*
-
 .eggs/
-.idea/
-.pytest_cache/
-.tox/
-.venv*/
-.settings/
-
+webassets_elm.egg-info/
 build/
 dist/
-downloads/
 
-__pypackages__/
-__pycache__/
-**/__pycache__/
+# Elm
+elm-stuff/
+node_modules/
 
-# -- OWN WORKSPACE: Directory(s), File(s)
-__*/
-__*.txt
+# Python third-party packages
+.coverage
+.python-version
+.tox
+cover/
 
+# OS, IDE & editor
+.DS_Store
+.ropeproject/
